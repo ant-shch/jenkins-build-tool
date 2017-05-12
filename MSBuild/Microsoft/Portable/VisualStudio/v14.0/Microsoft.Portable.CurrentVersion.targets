@@ -1,0 +1,165 @@
+<!--
+***********************************************************************************************
+Microsoft.Portable.CurrentVersion.targets
+
+Contains common targets that are shared by all portable library projects targeting a specific
+Visual Studio version.
+
+WARNING:  DO NOT MODIFY this file unless you are knowledgeable about MSBuild and have
+          created a backup copy.  Incorrect changes to this file will make it
+          impossible to load or build your projects from the command-line or the IDE.
+
+Copyright (C) Microsoft Corporation. All rights reserved.
+***********************************************************************************************
+-->
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <Import Project="$(WindowsUIXamlCommonTargets)" Condition="'$(PortableEnableXamlTargets)'=='true' and Exists('$(WindowsUIXamlCommonTargets)')" />
+
+    <PropertyGroup>
+        <!-- As there is not a good way to filter architectures/configurations from a VS perspective, we 
+             opt into all architectures, and then error when the user targets a platform that is not supported. 
+             NOTE: That Common targets blindly sets AvailablePlatforms, so we need to set it after them.
+         -->
+        <AvailablePlatforms>Any CPU,x86,x64,ARM</AvailablePlatforms>
+    </PropertyGroup>
+  
+    <UsingTask TaskName="Microsoft.VisualStudio.PortableLibrary.Build.Tasks.GetPlatformWinMDLocation" AssemblyFile="Microsoft.VisualStudio.PortableLibrary.Build.Tasks.dll" />
+
+    <PropertyGroup>
+        <ResolveReferencesDependsOn>
+            $(ResolveReferencesDependsOn);
+            ImplicitlyExpandTargetPlatform
+        </ResolveReferencesDependsOn>
+
+        <ImplicitlyExpandTargetPlatformDependsOn>
+            $(ImplicitlyExpandTargetPlatformDependsOn);
+            GetTargetPlatformWinMDLocation
+        </ImplicitlyExpandTargetPlatformDependsOn>
+
+        <PrepareForRunDependsOn>
+            DeterminePortablePlatformSdkPath;
+            DeterminePortableBuildCapabilities;
+            $(PrepareForRunDependsOn)
+        </PrepareForRunDependsOn>
+
+        <DeterminePortablePlatformSdkPathDependsOn>
+            $(DeterminePortablePlatformSdkPathDependsOn);
+            GetTargetPlatformWinMDLocation
+        </DeterminePortablePlatformSdkPathDependsOn>
+
+        <DeterminePortableBuildCapabilitiesDependsOn>
+            $(DeterminePortableBuildCapabilitiesDependsOn);
+            ImplicitlyExpandTargetFramework;
+        </DeterminePortableBuildCapabilitiesDependsOn>
+        
+        <GetPackagingOutputsDependsOn>
+            $(GetPackagingOutputsDependsOn);
+            DeterminePortableBuildCapabilities
+        </GetPackagingOutputsDependsOn>
+    </PropertyGroup>
+    
+
+    <PropertyGroup>
+        <TargetPlatformRootPath Condition="'$(TargetPlatformRootPath)' == ''">$(PortableSDKRoot)</TargetPlatformRootPath>
+    </PropertyGroup>
+
+    <!-- 
+        Given two or more targeted platforms, finds the location of the WinMDs 
+        that represent the intersection between those platforms.
+    -->
+    <Target Name="GetTargetPlatformWinMDLocation"
+            Condition="'@(TargetPlatform)' != '' and $(TargetPlatformWinMDLocation) == ''"
+            >
+
+        <GetPlatformWinMDLocation 
+            Platforms="@(TargetPlatform)"
+            RootPath="$(TargetPlatformRootPath)"
+            >
+
+            <Output TaskParameter="PlatformWinMDLocation" PropertyName="TargetPlatformWinMDLocation" />
+
+        </GetPlatformWinMDLocation>
+
+    </Target>
+
+    <!--
+        The ImplicitlyExpandTargetPlatform target will expand all of the winmd 
+        files in the Windows SDK and add them the the ReferencePath item which is 
+        the itemgroup which contains resolved items.
+    -->
+    <Target Name="ImplicitlyExpandTargetPlatform"
+       Condition="'$(ImplicitlyExpandTargetPlatform)' == 'true'"
+       DependsOnTargets="$(ImplicitlyExpandTargetPlatformDependsOn)"
+       >
+        
+        <ItemGroup>
+            <ReferencePath Include="$(TargetPlatformWinMDLocation)\*.winmd">
+                <WinMDFile>true</WinMDFile>
+                <CopyLocal>false</CopyLocal>
+                <ReferenceGrouping>$(TargetPlatformMoniker)</ReferenceGrouping>
+                <ReferenceGroupingDisplayName>$(TargetPlatformMonikerDisplayName)</ReferenceGroupingDisplayName>
+                <ResolvedFrom>ImplicitlyExpandTargetPlatform</ResolvedFrom>
+                <IsSystemReference>True</IsSystemReference>
+            </ReferencePath>
+        </ItemGroup>
+
+        <Message Importance="Low" Text="Including @(ReferencePath)"
+          Condition="'%(ReferencePath.ResolvedFrom)' == 'ImplicitlyExpandTargetPlatform'"/>
+
+        <ItemGroup>
+            <_ResolveAssemblyReferenceResolvedFiles Include="@(ReferencePath)"
+              Condition="'%(ReferencePath.ResolvedFrom)' == 'ImplicitlyExpandTargetPlatform'"/>
+        </ItemGroup>
+    </Target>
+
+    <!--
+        Determines which path to use for PlatformSDK.
+     -->
+    <Target Name="DeterminePortablePlatformSdkPath"
+            DependsOnTargets="$(DeterminePortablePlatformSdkPathDependsOn)">
+        <ItemGroup>
+            <!--
+              Allow for SDK configuration next to the intersected WinMD, this enables scenarios where we
+              need different tool configuration based on the target platform combination.
+            -->
+            <_PortableTargetPlatformSdkRootOverride Condition="'$(TargetPlatformWinMDLocation)' != ''" Include="$(TargetPlatformWinMDLocation)\**\windows.props"/>
+        </ItemGroup>
+
+        <PropertyGroup>
+            <TargetPlatformSdkRootOverride Condition="'$(TargetPlatformSdkRootOverride)' == '' and '@(_PortableTargetPlatformSdkRootOverride)' != ''">$(TargetPlatformWinMDLocation)</TargetPlatformSdkRootOverride>
+            <!-- Default to the per version root if we don't have per-intersection configuration -->
+            <TargetPlatformSdkRootOverride Condition="'$(TargetPlatformSdkRootOverride)' == ''">$(PortableSDKRoot)</TargetPlatformSdkRootOverride>
+        </PropertyGroup>
+    </Target>
+    
+    <Target Name="DeterminePortableBuildCapabilities"
+            DependsOnTargets="$(DeterminePortableBuildCapabilitiesDependsOn)">
+        <PropertyGroup>
+            <!-- Use a heuristic to determine if resources are supported.  Currently this matches the check used by the project system.
+                 Ideally this would be the result of a type lookup in Windows.winmd -->
+            <_PortablePriResourcesEnabled Condition="'%(ReferencePath.FileName)' == 'System.Runtime.WindowsRuntime.UI.Xaml'">true</_PortablePriResourcesEnabled>
+
+            <!-- Use a heuristic to determine if we can enable references in GetPackageOutputs.
+                 Currently we use the same heuristic as we do for resources.
+                 Older platforms don't support conflict resolution for reference in packaging outputs,
+                 instead we'll rely on ResolveAssemblyReferences to flow the right refernces to the app. -->
+            <PortableReferencePackagingEnabled Condition="'$(PortableReferencePackagingEnabled)' ==''">$(_PortablePriResourcesEnabled)</PortableReferencePackagingEnabled>
+        </PropertyGroup>
+
+        <Message Importance="Low" Condition="'$(_PortablePriResourcesEnabled)' != 'true'" Text="Disabling pri resource targets." />
+
+        <PropertyGroup Condition="'$(_PortablePriResourcesEnabled)' != 'true'">
+            <AppxGeneratePriEnabled>false</AppxGeneratePriEnabled>
+            <AppxGeneratePrisForPortableLibrariesEnabled>false</AppxGeneratePrisForPortableLibrariesEnabled>
+            <AppxGetPackagePropertiesEnabled>false</AppxGetPackagePropertiesEnabled>
+            <IncludeProjectPriFile>false</IncludeProjectPriFile>
+        </PropertyGroup>
+
+        <Message Importance="Low" Condition="'$(PortableReferencePackagingEnabled)' != 'true'" Text="Excluding copy local references from packaging output." />
+
+        <PropertyGroup Condition="'$(PortableReferencePackagingEnabled)' != 'true'">
+            <IncludeCopyLocalFilesOutputGroup>false</IncludeCopyLocalFilesOutputGroup>
+        </PropertyGroup>
+    </Target>
+
+</Project>

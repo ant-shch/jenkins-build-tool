@@ -1,0 +1,48 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <UnitTestPlatformVersion  Condition="'$(UnitTestPlatformVersion)' == ''">14.0</UnitTestPlatformVersion>
+  </PropertyGroup>
+  <Target
+      Name="ModifyUnitTestPlatformVersion"
+      BeforeTargets="ResolveSDKReferences"
+  >
+    <ItemGroup>
+      <!-- Unit Test SDK reference retarget for Windows Phone 8.1 -->
+      <SDKReference Include="CppUnitTestFramework, Version=$(UnitTestPlatformVersion)" Condition="'$(PlatformToolset)' != '' and '%(SDKReference.Identity)' == 'CppUnitTestFramework, Version=12.0'" />
+      <SDKReference Include="MSTestFramework, Version=$(UnitTestPlatformVersion)"  Condition="'$(PlatformToolset)' == '' and '%(SDKReference.Identity)' == 'MSTestFramework, Version=12.0'" />
+      <SDKReference Include="TestPlatform, Version=$(UnitTestPlatformVersion)" Condition="'%(SDKReference.Identity)' == 'TestPlatform, Version=12.0'" />
+
+      <SDKReference Remove="CppUnitTestFramework, Version=12.0"/>
+      <SDKReference Remove="MSTestFramework, Version=12.0"/>
+      <SDKReference Remove="TestPlatform, Version=12.0" />
+
+      <!-- Unit Test SDK reference retarget for Windows Store -->
+      <SDKReference Include="CppUnitTestFramework, Version=$(UnitTestPlatformVersion)" Condition="'$(PlatformToolset)' != '' and '%(SDKReference.Identity)' == 'CppUnitTestFramework, Version=11.0' and '$(TargetPlatformIdentifier)' == 'Windows' and '$(TargetPlatformVersion)' == '8.1'" />
+      <SDKReference Include="MSTestFramework, Version=$(UnitTestPlatformVersion)"  Condition="'$(PlatformToolset)' == '' and '%(SDKReference.Identity)' == 'MSTestFramework, Version=11.0' and '$(TargetPlatformIdentifier)' == 'Windows' and '$(TargetPlatformVersion)' == '8.1'" />
+      <SDKReference Include="TestPlatform, Version=$(UnitTestPlatformVersion)" Condition="'%(SDKReference.Identity)' == 'TestPlatform, Version=11.0' and '$(TargetPlatformIdentifier)' == 'Windows' and '$(TargetPlatformVersion)' == '8.1'" />
+
+      <SDKReference Remove="CppUnitTestFramework, Version=11.0"  Condition="'$(TargetPlatformIdentifier)' == 'Windows' and '$(TargetPlatformVersion)' == '8.1'"/>
+      <SDKReference Remove="MSTestFramework, Version=11.0" Condition="'$(TargetPlatformIdentifier)' == 'Windows' and '$(TargetPlatformVersion)' == '8.1'"/>
+      <SDKReference Remove="TestPlatform, Version=11.0" Condition="'$(TargetPlatformIdentifier)' == 'Windows' and '$(TargetPlatformVersion)' == '8.1'" />
+    </ItemGroup>
+  </Target>
+  <PropertyGroup>
+    <CppWindowsStoreUnitTestLibraryType Condition="'$(CppWindowsStoreUnitTestLibraryType)' == ''">false</CppWindowsStoreUnitTestLibraryType>
+  </PropertyGroup>
+
+  <UsingTask TaskName="Microsoft.VisualStudio.TestPlatform.BuildTasks.PackageDllIntoAppx" AssemblyFile="$(VS140COMNTOOLS)\..\IDE\CommonExtensions\Microsoft\TestWindow\Microsoft.VisualStudio.TestPlatform.BuildTasks.dll"/>
+
+  <Target Name="CppUnitTestPackageAppx"
+    Condition="'$(CppWindowsStoreUnitTestLibraryType)' == 'true'"
+    AfterTargets="GetPackagingOutputs">
+
+    <PackageDllIntoAppx Inputs="@(PackagingOutputs)" TargetDirectory="$(TargetDir)">
+      <Output TaskParameter="Outputs" ItemName="UpdatedPackagingOutputs" />
+    </PackageDllIntoAppx>
+
+    <ItemGroup>
+      <PackagingOutputs Remove="@(PackagingOutputs)"/>
+      <PackagingOutputs Include="@(UpdatedPackagingOutputs)"/>
+    </ItemGroup>
+  </Target>
+</Project>
