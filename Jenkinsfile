@@ -12,6 +12,7 @@ node {
         stage('Checkout') {
             cleanDir(buildArtifactsDir)
             cleanDir(reportsDir)
+            git 'https://github.com/khdevnet/jenkins-build-tool.git'
             git 'https://github.com/khdevnet/REST.git'
         }
         def buildStatus = BuildStatus.Ok
