@@ -19,15 +19,15 @@ node {
             dir(env.MAIN_COMPONENT_FOLDER) {
                 git url: env.MAIN_COMPONENT_REPOSITORY
             }
-           
+            println "${env.WORKSPACE}\\${MAIN_COMPONENT_FOLDER}\\BuildConfiguration.json"
+            buildConfiguration = configuration.readJson("${env.WORKSPACE}\\${MAIN_COMPONENT_FOLDER}\\BuildConfiguration.json");
+            
             for(def component : buildConfiguration.components ) {
               if(!component.main)
               dir(component.name) {
                   git url: component.url
               }
             }
-            println "${env.WORKSPACE}\\${MAIN_COMPONENT_FOLDER}\\BuildConfiguration.json"
-            buildConfiguration = configuration.readJson("${env.WORKSPACE}\\$JOB_NAME\\BuildConfiguration.json");
         }
         def buildStatus = BuildStatus.Ok
         try {
