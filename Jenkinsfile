@@ -55,14 +55,14 @@ node {
             echo '===FINALY==='
             stage('Notifications') {
               def subject = "Build $buildStatus - $JOB_NAME ($BUILD_DISPLAY_NAME)"
-              def emailBody = getEmailBody(buildResultTemplateDir, buildStatus) 
+              def emailBody = getEmailBody(buildResultTemplateDir, reportsDir, reports, buildStatus) 
               emailext body: emailBody, subject: subject, to: 'khdevnet@gmail.com'
             }
        }
     }
 }
 
-def getEmailBody(buildResultTemplateDir, buildStatus) {
+def getEmailBody(buildResultTemplateDir, reportsDir, reports, buildStatus) {
     def nunitTestBody = renderTemplete(
         buildResultTemplateDir + 'nunitTestResult.template.html', 
         getTestReportModel(reportsDir + '\\TestResult.xml'))
