@@ -1,6 +1,4 @@
 #!groovy
-import groovy.json.JsonSlurper
-
 node {
     def buildArtifacts = "\\buildartifacts"
     def buildArtifactsDir = "${env.WORKSPACE}\\$buildArtifacts"
