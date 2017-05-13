@@ -55,23 +55,25 @@ node {
             echo '===FINALY==='
             stage('Notifications') {
               def subject = "Build $buildStatus - $JOB_NAME ($BUILD_DISPLAY_NAME)"
-                
-              def nunitTestBody = renderTemplete(
-                  buildResultTemplateDir + 'nunitTestResult.template.html', 
-                  getTestReportModel(reportsDir + '\\TestResult.xml'))
-             
-              def fxCopTestBody = renderTemplete(
-                  buildResultTemplateDir + 'fxCopTestResult.template.html', 
-                  getFxCopReporModel(["$reports/*.fxcop.xml"], reportsDir))
-                
-              def emailBody = renderTemplete(
-                  buildResultTemplateDir + 'buildresult.template.html', 
-                  getBuildCompleteModel(nunitTestBody, fxCopTestBody, buildStatus))
-                
+              def emailBody = getEmailBody(buildResultTemplateDir, buildStatus) 
               emailext body: emailBody, subject: subject, to: 'khdevnet@gmail.com'
             }
        }
     }
+}
+
+def getEmailBody(buildResultTemplateDir, buildStatus) {
+    def nunitTestBody = renderTemplete(
+        buildResultTemplateDir + 'nunitTestResult.template.html', 
+        getTestReportModel(reportsDir + '\\TestResult.xml'))
+             
+    def fxCopTestBody = renderTemplete(
+        buildResultTemplateDir + 'fxCopTestResult.template.html', 
+        getFxCopReporModel(["$reports/*.fxcop.xml"], reportsDir))
+                
+    def emailBody = renderTemplete(
+        buildResultTemplateDir + 'buildresult.template.html', 
+        getBuildCompleteModel(nunitTestBody, fxCopTestBody, buildStatus))  
 }
 
 def checkoutComponents(components){
