@@ -1,4 +1,6 @@
 #!groovy
+import groovy.json.JsonSlurper
+
 node {
     def buildArtifacts = "\\buildartifacts"
     def buildArtifactsDir = "${env.WORKSPACE}\\$buildArtifacts"
@@ -20,9 +22,9 @@ node {
             println "${env.WORKSPACE}\\${env.BuildConfigurationPath}"
             def buildConfiguration = jsonConfiguration.Get("${env.WORKSPACE}\\${env.BuildConfigurationPath}");
             
-            for(def repo :buildConfiguration.Repositories ) {
-              dir(repo.Name) {
-                  git url: repo.Url
+            for(def repo :buildConfiguration.repositories ) {
+              dir(repo.name) {
+                  git url: repo.url
               }
             }
             
