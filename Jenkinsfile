@@ -33,8 +33,10 @@ node {
             }
 
             stage('CodeQuality') {
-              def codeQualityDllNames = getFiles(codeQualityDllWildCards, "${env.WORKSPACE}}\\${configuration.artifacts}\\")
+              def codeQualityDllNames = getFiles(codeQualityDllWildCards, "${env.WORKSPACE}}\\${configuration.artifacts}")
               for(def fileName : codeQualityDllNames ) { 
+                 println fileName
+                 println "$reportsDir\\${new File(fileName).name}.fxcop.xml"
                  try{
                   bat """${tool 'fxcop'} /f:$fileName /o:$reportsDir\\${new File(fileName).name}.fxcop.xml"""
                  } catch(Exception ex) {
