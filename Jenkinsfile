@@ -8,29 +8,21 @@ node {
     def buildResultTemplateDir =  "${env.WORKSPACE}\\jenkins-build-tool\\buildtools\\report\\"
     def codeQualityDllWildCards = ["$buildArtifacts/*.Api.dll","$buildArtifacts/*.Domain.dll"];
     def buildConfiguration
-    dir(env.BUILD_TOOL_COMPONENT_FOLDER) {
-         git url: env.BUILD_TOOL_COMPONENT_REPOSITORY
-    }
-            
-    def configuration = load "${env.BUILD_TOOL_COMPONENT_FOLDER}\\JsonConfiguration.groovy"
+    def configuration
 
     timestamps {
         stage('Checkout') {
             cleanDir(buildArtifactsDir)
-            def components =  readJsonFromText(env.COMPONENTS)
-            println components
-            dir(env.MAIN_COMPONENT_FOLDER) {
-                git url: env.MAIN_COMPONENT_REPOSITORY
-            }
-            println "${env.WORKSPACE}\\${MAIN_COMPONENT_FOLDER}\\BuildConfiguration.json"
-            buildConfiguration = configuration.readJsonFromFile("${env.WORKSPACE}\\${MAIN_COMPONENT_FOLDER}\\BuildConfiguration.json");
-            
-            for(def component : buildConfiguration.components ) {
-              if(!component.main)
-              dir(component.name) {
-                  git url: component.url
+
+            for(def component : readJsonFromText(env.COMPONENTS) ) {
+              dir(getComponentFolder(component)) {
+                  git url: component
               }
             }
+            
+            configuration = load "jenkins-build-tool\\JsonConfiguration.groovy"
+            def buildConfigurationJsonFile = findFiles(glob: "BuildConfiguration.json").first()
+            buildConfiguration = configuration.readJsonFromFile(buildConfigurationJsonFile.path)
         }
         def buildStatus = BuildStatus.Ok
         try {
@@ -89,6 +81,10 @@ node {
             }
        }
     }
+}
+
+def getComponentFolder(giturl) {
+    giturl.replace('.git','').tokenize( '/' ).last()
 }
 
 def readJsonFromText(def text) { 
