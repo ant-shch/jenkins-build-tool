@@ -199,12 +199,7 @@ def findlastNode(list, nodeName){
        }
     }
 }
-def getFiles(wildcards){
-    def files = []
-    for(def wildcard : wildcards ) { 
-        files.addAll(findFiles(glob: wildcard))
-    }
-}
+
 def getFiles(wildcards, rootDir=''){
     def files = []
     for(def wildcard : wildcards ) { 
