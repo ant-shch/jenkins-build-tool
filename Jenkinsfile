@@ -7,17 +7,17 @@ node {
     def buildResultTemplateDir =  "${env.WORKSPACE}\\jenkins-build-tool\\buildtools\\report\\"
     def codeQualityDllWildCards = ["$buildArtifacts/*.Api.dll","$buildArtifacts/*.Domain.dll"];
     def buildConfiguration
-    dir($env.BUILD_TOOL_COMPONENT_FOLDER) {
-         git url: $env.BUILD_TOOL_COMPONENT_REPOSITORY
+    dir(env.BUILD_TOOL_COMPONENT_FOLDER) {
+         git url: env.BUILD_TOOL_COMPONENT_REPOSITORY
     }
             
-    def configuration = load 'jenkins-build-tool\\JsonConfiguration.groovy'
+    def configuration = load "${env.BUILD_TOOL_COMPONENT_FOLDER}\\JsonConfiguration.groovy"
 
     timestamps {
         stage('Checkout') {
             cleanDir(buildArtifactsDir)
-            dir($env.MAIN_COMPONENT_FOLDER) {
-                git url: $env.MAIN_COMPONENT_REPOSITORY
+            dir(env.MAIN_COMPONENT_FOLDER) {
+                git url: env.MAIN_COMPONENT_REPOSITORY
             }
            
             for(def component : buildConfiguration.components ) {
