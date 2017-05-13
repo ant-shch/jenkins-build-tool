@@ -1,4 +1,5 @@
 #!groovy
+import groovy.json.JsonSlurperClassic
 node {
     def buildArtifacts = "\\buildartifacts"
     def buildArtifactsDir = "${env.WORKSPACE}\\$buildArtifacts"
@@ -16,11 +17,13 @@ node {
     timestamps {
         stage('Checkout') {
             cleanDir(buildArtifactsDir)
+            def components =  readJsonFromText(env.COMPONENTS)
+            println components
             dir(env.MAIN_COMPONENT_FOLDER) {
                 git url: env.MAIN_COMPONENT_REPOSITORY
             }
             println "${env.WORKSPACE}\\${MAIN_COMPONENT_FOLDER}\\BuildConfiguration.json"
-            buildConfiguration = configuration.readJson("${env.WORKSPACE}\\${MAIN_COMPONENT_FOLDER}\\BuildConfiguration.json");
+            buildConfiguration = configuration.readJsonFromFile("${env.WORKSPACE}\\${MAIN_COMPONENT_FOLDER}\\BuildConfiguration.json");
             
             for(def component : buildConfiguration.components ) {
               if(!component.main)
@@ -86,6 +89,10 @@ node {
             }
        }
     }
+}
+
+def readJsonFromText(def text) { 
+    return new JsonSlurperClassic().parseText(text) 
 }
 
 // parse fx cop
