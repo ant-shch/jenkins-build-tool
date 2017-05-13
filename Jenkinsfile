@@ -7,8 +7,8 @@ node {
     def buildResultTemplateDir =  "${env.WORKSPACE}\\jenkins-build-tool\\buildtools\\report\\"
     def codeQualityDllWildCards = ["$buildArtifacts/*.Api.dll","$buildArtifacts/*.Domain.dll"];
     def buildConfiguration
-    dir('jenkins-build-tool') {
-         git url: 'https://github.com/khdevnet/jenkins-build-tool.git'
+    dir($env.BUILD_TOOL_COMPONENT_FOLDER) {
+         git url: $env.BUILD_TOOL_COMPONENT_REPOSITORY
     }
             
     def configuration = load 'jenkins-build-tool\\JsonConfiguration.groovy'
@@ -16,12 +16,16 @@ node {
     timestamps {
         stage('Checkout') {
             cleanDir(buildArtifactsDir)
+            dir($env.MAIN_COMPONENT_FOLDER) {
+                git url: $env.MAIN_COMPONENT_REPOSITORY
+            }
+           
             for(def repo : buildConfiguration.repositories ) {
               dir(repo.name) {
                   git url: repo.url
               }
             }
-            println "${env.WORKSPACE}\\$JOB_NAME\\BuildConfiguration.json"
+            println "${env.WORKSPACE}\\${MAIN_COMPONENT_FOLDER}\\BuildConfiguration.json"
             buildConfiguration = configuration.readJson("${env.WORKSPACE}\\$JOB_NAME\\BuildConfiguration.json");
         }
         def buildStatus = BuildStatus.Ok
