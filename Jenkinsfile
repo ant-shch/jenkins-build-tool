@@ -16,9 +16,9 @@ node {
                 git url: 'https://github.com/khdevnet/jenkins-build-tool.git'
             }
             
-            def jsonConfiguration = load 'jenkins-build-tool\\JsonConfiguration.groovy'
+            def configuration = load 'jenkins-build-tool\\JsonConfiguration.groovy'
             println "${env.WORKSPACE}\\${env.BuildConfigurationPath}"
-            def buildConfiguration = jsonConfiguration.read("${env.WORKSPACE}\\${env.BuildConfigurationPath}");
+            def buildConfiguration = configuration.readJson("${env.WORKSPACE}\\${env.BuildConfigurationPath}");
             
             for(def repo :buildConfiguration.repositories ) {
               dir(repo.name) {
