@@ -5,7 +5,7 @@ node {
     def solutionName = 'REST\\watchshop.sln'
     def reports = "buildartifacts/reports"
     def reportsDir = "$buildArtifactsDir\\reports"
-    def buildResultTemplateDir =  "${env.WORKSPACE}\\buildtools\\report\\"
+    def buildResultTemplateDir =  "${env.WORKSPACE}\\jenkins-build-tool\\buildtools\\report\\"
     def codeQualityDllWildCards = ["$buildArtifacts/*.Api.dll","$buildArtifacts/*.Domain.dll"];
    
     timestamps {
