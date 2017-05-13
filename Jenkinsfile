@@ -8,26 +8,16 @@ node {
     def buildResultTemplateDir =  "${env.WORKSPACE}\\jenkins-build-tool\\buildtools\\report\\"
     def codeQualityDllWildCards = ["$buildArtifacts/*.Api.dll","$buildArtifacts/*.Domain.dll"];
     def buildConfiguration
-    def configuration
+    def buildStatus = BuildStatus.Ok
 
     timestamps {
         stage('Checkout') {
             cleanDir(buildArtifactsDir)
-
-            for(def component : readJsonFromText(env.COMPONENTS) ) {
-              dir(getComponentFolder(component)) {
-                  git url: component
-              }
-            }
-            
-            configuration = load "jenkins-build-tool\\JsonConfiguration.groovy"
-            def buildConfigurationJsonFile = findFiles(glob: "**/**/BuildConfiguration.json").first()
-            println "${env.WORKSPACE}//${buildConfigurationJsonFile.path}"
-            buildConfiguration = configuration.readJsonFromFile("${env.WORKSPACE}//${buildConfigurationJsonFile.path}")
+            checkoutComponents(env.COMPONENTS)
+            buildConfiguration = getConfiguration('BuildConfiguration.json')
         }
-        def buildStatus = BuildStatus.Ok
+        
         try {
-
             stage('Build') {
                 for(def component : buildConfiguration.components ) {
                     def solution = "${component.name}\\${component.solution}"
@@ -84,12 +74,30 @@ node {
     }
 }
 
+def checkoutComponents(components){
+    for(def gitUrl : readJsonFromText(components) ) {
+        dir(getComponentFolder(gitUrl)) {
+            git url: gitUrl
+         }
+    }
+}
+
+def getConfiguration(configurationFileName) {
+    def buildConfigurationJsonFile = findFiles(glob: "**/**/$configurationFileName").first()
+    readJsonFromFile("${env.WORKSPACE}//${buildConfigurationJsonFile.path}")
+}
+
 def getComponentFolder(giturl) {
     giturl.replace('.git','').tokenize( '/' ).last()
 }
 
 def readJsonFromText(def text) { 
     return new JsonSlurperClassic().parseText(text) 
+}
+
+def readJsonFromFile(def path) { 
+    def configurationFile = new File(path)
+    return new JsonSlurperClassic().parseText(configurationFile.text) 
 }
 
 // parse fx cop
