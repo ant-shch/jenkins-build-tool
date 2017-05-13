@@ -27,13 +27,13 @@ node {
              }
 
             stage('Tests') {
-                def testDllsName = getFiles(["${configuration.artifacts}/*.Tests.dll"], "${env.WORKSPACE}}\\${configuration.artifacts}").join(' ')
+                def testDllsName = getFiles(["${configuration.artifacts}/*.Tests.dll"], "${env.WORKSPACE}}\\${configuration.artifacts}\\").join(' ')
                 bat """${tool 'nunit'} $testDllsName --work=$reportsDir"""
                 nunit testResultsPattern: "$reports/TestResult.xml"
             }
 
             stage('CodeQuality') {
-              def codeQualityDllNames = getFiles(codeQualityDllWildCards, "${env.WORKSPACE}}\\${configuration.artifacts}")
+              def codeQualityDllNames = getFiles(codeQualityDllWildCards, "${env.WORKSPACE}}\\${configuration.artifacts}\\")
               for(def fileName : codeQualityDllNames ) { 
                  try{
                   bat """${tool 'fxcop'} /f:$fileName /o:$reportsDir\\${new File(fileName).name}.fxcop.xml"""
