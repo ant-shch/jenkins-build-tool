@@ -6,7 +6,7 @@ node {
     def reportsDir = "$buildArtifactsDir\\reports"
     def buildResultTemplateDir =  "${env.WORKSPACE}\\jenkins-build-tool\\buildtools\\report\\"
     def codeQualityDllWildCards = ["$buildArtifacts/*.Api.dll","$buildArtifacts/*.Domain.dll"];
-     
+    def buildConfiguration
     dir('jenkins-build-tool') {
          git url: 'https://github.com/khdevnet/jenkins-build-tool.git'
     }
@@ -22,7 +22,7 @@ node {
               }
             }
             println "${env.WORKSPACE}\\$JOB_NAME\\BuildConfiguration.json"
-            def buildConfiguration = configuration.readJson("${env.WORKSPACE}\\$JOB_NAME\\BuildConfiguration.json");
+            buildConfiguration = configuration.readJson("${env.WORKSPACE}\\$JOB_NAME\\BuildConfiguration.json");
         }
         def buildStatus = BuildStatus.Ok
         try {
