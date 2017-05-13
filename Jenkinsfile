@@ -1,6 +1,6 @@
 #!groovy
 node {
-    def jsonConfiguration = load 'JsonConfiguration.groovy'
+    def jsonConfiguration = load 'jenkins-build-tool\\JsonConfiguration.groovy'
     def buildArtifacts = "\\buildartifacts"
     def buildArtifactsDir = "${env.WORKSPACE}\\$buildArtifacts"
     def solutionName = 'REST\\watchshop.sln'
