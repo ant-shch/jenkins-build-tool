@@ -7,33 +7,33 @@ node {
     def reportsDir = "$buildArtifactsDir\\reports"
     def buildResultTemplateDir =  "${env.WORKSPACE}\\jenkins-build-tool\\buildtools\\report\\"
     def codeQualityDllWildCards = ["$buildArtifacts/*.Api.dll","$buildArtifacts/*.Domain.dll"];
-    def buildConfiguration
+    def configuration
     def buildStatus = BuildStatus.Ok
 
     timestamps {
         stage('Checkout') {
-            cleanDir(buildArtifactsDir)
+            cleanDir(env.WORKSPACE)
             checkoutComponents(env.COMPONENTS)
-            buildConfiguration = getConfiguration('BuildConfiguration.json')
+            configuration = getConfiguration('BuildConfiguration.json')
         }
         
         try {
             stage('Build') {
-                for(def component : buildConfiguration.components ) {
+                for(def component : configuration.components ) {
                     def solution = "${component.name}\\${component.solution}"
                     bat "\"${tool 'nuget'}\" restore $solution"
-                    bat "\"${tool 'msbuild'}\" $solution /p:DeployOnBuild=true;DeployTarget=Package /p:Configuration=Release;OutputPath=\"$buildArtifactsDir\" /p:Platform=\"Any CPU\" /p:ProductVersion=1.0.0.${env.BUILD_NUMBER}"
+                    bat "\"${tool 'msbuild'}\" $solution /p:DeployOnBuild=true;DeployTarget=Package /p:Configuration=Release;OutputPath=\"..\\${configuration.artifacts}\" /p:Platform=\"Any CPU\" /p:ProductVersion=1.0.0.${env.BUILD_NUMBER}"
                 }
              }
 
             stage('Tests') {
-                def testDllsName = getFiles(["$buildArtifacts/*.Tests.dll"], buildArtifactsDir).join(' ')
+                def testDllsName = getFiles(["${configuration.artifacts}/*.Tests.dll"], "${env.WORKSPACE}}\\${configuration.artifacts}").join(' ')
                 bat """${tool 'nunit'} $testDllsName --work=$reportsDir"""
                 nunit testResultsPattern: "$reports/TestResult.xml"
             }
 
             stage('CodeQuality') {
-              def codeQualityDllNames = getFiles(codeQualityDllWildCards, buildArtifactsDir)
+              def codeQualityDllNames = getFiles(codeQualityDllWildCards, "${env.WORKSPACE}}\\${configuration.artifacts}")
               for(def fileName : codeQualityDllNames ) { 
                  try{
                   bat """${tool 'fxcop'} /f:$fileName /o:$reportsDir\\${new File(fileName).name}.fxcop.xml"""
@@ -199,7 +199,12 @@ def findlastNode(list, nodeName){
        }
     }
 }
-
+def getFiles(wildcards){
+    def files = []
+    for(def wildcard : wildcards ) { 
+        files.addAll(findFiles(glob: wildcard))
+    }
+}
 def getFiles(wildcards, rootDir=''){
     def files = []
     for(def wildcard : wildcards ) { 
