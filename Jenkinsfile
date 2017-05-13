@@ -12,12 +12,12 @@ node {
     }
             
     def configuration = load 'jenkins-build-tool\\JsonConfiguration.groovy'
-    println "${env.WORKSPACE}\\$JOB_NAME\\BuildConfiguration.json"
-    def buildConfiguration = configuration.readJson("${env.WORKSPACE}\\$JOB_NAME\\BuildConfiguration.json");
-    
+
     timestamps {
         stage('Checkout') {
             cleanDir(buildArtifactsDir)
+            println "${env.WORKSPACE}\\$JOB_NAME\\BuildConfiguration.json"
+            def buildConfiguration = configuration.readJson("${env.WORKSPACE}\\$JOB_NAME\\BuildConfiguration.json");
             for(def repo : buildConfiguration.repositories ) {
               dir(repo.name) {
                   git url: repo.url
