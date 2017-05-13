@@ -29,7 +29,7 @@ node {
 
             stage('Build') {
                 for(def repo : buildConfiguration.repositories ) {
-                    def solution = ${repo.name}\\${repo.solution}
+                    def solution = "${repo.name}\\${repo.solution}"
                     bat "\"${tool 'nuget'}\" restore $solution
                     bat "\"${tool 'msbuild'}\" $solution  /p:DeployOnBuild=true;DeployTarget=Package /p:Configuration=Release;OutputPath=\"$buildArtifactsDir\" /p:Platform=\"Any CPU\" /p:ProductVersion=1.0.0.${env.BUILD_NUMBER}"
                 }
