@@ -18,11 +18,11 @@ node {
             
             def jsonConfiguration = load 'jenkins-build-tool\\JsonConfiguration.groovy'
             println "${env.WORKSPACE}\\${env.BuildConfigurationPath}"
-            def buildConfiguration = jsonConfiguration.Read("${env.WORKSPACE}\\${env.BuildConfigurationPath}");
+            def buildConfiguration = jsonConfiguration.Get("${env.WORKSPACE}\\${env.BuildConfigurationPath}");
             
-            for(def repo :buildConfiguration.repos ) {
-              dir(repo.name) {
-                  git url: repo.url
+            for(def repo :buildConfiguration.Repositories ) {
+              dir(repo.Name) {
+                  git url: repo.Url
               }
             }
             
