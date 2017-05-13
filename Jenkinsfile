@@ -16,13 +16,13 @@ node {
     timestamps {
         stage('Checkout') {
             cleanDir(buildArtifactsDir)
-            println "${env.WORKSPACE}\\$JOB_NAME\\BuildConfiguration.json"
-            def buildConfiguration = configuration.readJson("${env.WORKSPACE}\\$JOB_NAME\\BuildConfiguration.json");
             for(def repo : buildConfiguration.repositories ) {
               dir(repo.name) {
                   git url: repo.url
               }
-            }          
+            }
+            println "${env.WORKSPACE}\\$JOB_NAME\\BuildConfiguration.json"
+            def buildConfiguration = configuration.readJson("${env.WORKSPACE}\\$JOB_NAME\\BuildConfiguration.json");
         }
         def buildStatus = BuildStatus.Ok
         try {
