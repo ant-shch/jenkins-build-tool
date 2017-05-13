@@ -2,7 +2,7 @@
 node {
     def buildArtifacts = "\\buildartifacts"
     def buildArtifactsDir = "${env.WORKSPACE}\\$buildArtifacts"
-    def solutionName = 'watchshop.sln'
+    def solutionName = 'REST\\watchshop.sln'
     def reports = "buildartifacts/reports"
     def reportsDir = "$buildArtifactsDir\\reports"
     def buildResultTemplateDir =  "${env.WORKSPACE}\\buildtools\\report\\"
