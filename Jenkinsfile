@@ -20,9 +20,10 @@ node {
                 git url: $env.MAIN_COMPONENT_REPOSITORY
             }
            
-            for(def repo : buildConfiguration.repositories ) {
-              dir(repo.name) {
-                  git url: repo.url
+            for(def component : buildConfiguration.components ) {
+              if(!component.main)
+              dir(component.name) {
+                  git url: component.url
               }
             }
             println "${env.WORKSPACE}\\${MAIN_COMPONENT_FOLDER}\\BuildConfiguration.json"
@@ -32,8 +33,8 @@ node {
         try {
 
             stage('Build') {
-                for(def repo : buildConfiguration.repositories ) {
-                    def solution = "${repo.name}\\${repo.solution}"
+                for(def component : buildConfiguration.components ) {
+                    def solution = "${component.name}\\${component.solution}"
                     bat "\"${tool 'nuget'}\" restore $solution"
                     bat "\"${tool 'msbuild'}\" $solution /p:DeployOnBuild=true;DeployTarget=Package /p:Configuration=Release;OutputPath=\"$buildArtifactsDir\" /p:Platform=\"Any CPU\" /p:ProductVersion=1.0.0.${env.BUILD_NUMBER}"
                 }
