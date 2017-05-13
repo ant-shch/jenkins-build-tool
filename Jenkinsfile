@@ -18,7 +18,7 @@ node {
             
             def configuration = load 'jenkins-build-tool\\JsonConfiguration.groovy'
             println "${env.WORKSPACE}\\${env.BuildConfigurationPath}"
-            def buildConfiguration = configuration.readJson("${env.WORKSPACE}\\${env.BuildConfigurationPath}");
+            def buildConfiguration = configuration.readJson("${env.WORKSPACE}\\$JOB_NAME");
             
             for(def repo :buildConfiguration.repositories ) {
               dir(repo.name) {
