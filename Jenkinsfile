@@ -1,6 +1,5 @@
 #!groovy
 node {
-    def jsonConfiguration = load 'jenkins-build-tool\\JsonConfiguration.groovy'
     def buildArtifacts = "\\buildartifacts"
     def buildArtifactsDir = "${env.WORKSPACE}\\$buildArtifacts"
     def solutionName = 'REST\\watchshop.sln'
@@ -13,13 +12,15 @@ node {
         stage('Checkout') {
             cleanDir(buildArtifactsDir)
             cleanDir(reportsDir)
-            jsonConfiguration.Read("${env.WORKSPACE}\\REST\\BuildConfiguration.json");
+            
             dir('jenkins-build-tool') {
                 git url: 'https://github.com/khdevnet/jenkins-build-tool.git'
             }
             dir('REST') {
                 git url: 'https://github.com/khdevnet/REST.git'
             }
+            def jsonConfiguration = load 'jenkins-build-tool\\JsonConfiguration.groovy'
+            jsonConfiguration.Read("${env.WORKSPACE}\\REST\\BuildConfiguration.json");
         }
         def buildStatus = BuildStatus.Ok
         try {
