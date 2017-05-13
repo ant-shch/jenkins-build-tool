@@ -5,4 +5,4 @@ def readJson(def path) {
     return new JsonSlurperClassic().parseText(configurationFile.text) 
 }
 
-return [readJson: this.&readJson];
+return this;
