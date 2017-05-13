@@ -1,5 +1,6 @@
 #!groovy
 node {
+    def jsonConfiguration = load 'JsonConfiguration.groovy'
     def buildArtifacts = "\\buildartifacts"
     def buildArtifactsDir = "${env.WORKSPACE}\\$buildArtifacts"
     def solutionName = 'REST\\watchshop.sln'
@@ -7,12 +8,12 @@ node {
     def reportsDir = "$buildArtifactsDir\\reports"
     def buildResultTemplateDir =  "${env.WORKSPACE}\\jenkins-build-tool\\buildtools\\report\\"
     def codeQualityDllWildCards = ["$buildArtifacts/*.Api.dll","$buildArtifacts/*.Domain.dll"];
-   
+    
     timestamps {
         stage('Checkout') {
             cleanDir(buildArtifactsDir)
             cleanDir(reportsDir)
-          
+            jsonConfiguration.Read("${env.WORKSPACE}\\REST\\BuildConfiguration.json");
             dir('jenkins-build-tool') {
                 git url: 'https://github.com/khdevnet/jenkins-build-tool.git'
             }
