@@ -11,16 +11,20 @@ node {
     timestamps {
         stage('Checkout') {
             cleanDir(buildArtifactsDir)
-            cleanDir(reportsDir)
-            
+
             dir('jenkins-build-tool') {
                 git url: 'https://github.com/khdevnet/jenkins-build-tool.git'
             }
-            dir('REST') {
-                git url: 'https://github.com/khdevnet/REST.git'
-            }
+            
             def jsonConfiguration = load 'jenkins-build-tool\\JsonConfiguration.groovy'
-            jsonConfiguration.Read("${env.WORKSPACE}\\REST\\BuildConfiguration.json");
+            def buildConfiguration = jsonConfiguration.Read("${env.WORKSPACE}\\$BuildConfigurationPath");
+            
+            for(def repo :buildConfiguration.repos ) {
+              dir(repo.name) {
+                  git url: repo.url
+              }
+            }
+            
         }
         def buildStatus = BuildStatus.Ok
         try {
