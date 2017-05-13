@@ -21,7 +21,7 @@ node {
             }
             
             configuration = load "jenkins-build-tool\\JsonConfiguration.groovy"
-            def buildConfigurationJsonFile = findFiles(glob: "BuildConfiguration.json").first()
+            def buildConfigurationJsonFile = findFiles(glob: "**/**/BuildConfiguration.json").first()
             buildConfiguration = configuration.readJsonFromFile(buildConfigurationJsonFile.path)
         }
         def buildStatus = BuildStatus.Ok
