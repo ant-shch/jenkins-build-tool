@@ -2,38 +2,38 @@
 node {
     def buildArtifacts = "\\buildartifacts"
     def buildArtifactsDir = "${env.WORKSPACE}\\$buildArtifacts"
-    def solutionName = 'REST\\watchshop.sln'
     def reports = "buildartifacts/reports"
     def reportsDir = "$buildArtifactsDir\\reports"
     def buildResultTemplateDir =  "${env.WORKSPACE}\\jenkins-build-tool\\buildtools\\report\\"
     def codeQualityDllWildCards = ["$buildArtifacts/*.Api.dll","$buildArtifacts/*.Domain.dll"];
+     
+    dir('jenkins-build-tool') {
+         git url: 'https://github.com/khdevnet/jenkins-build-tool.git'
+    }
+            
+    def configuration = load 'jenkins-build-tool\\JsonConfiguration.groovy'
+    println "${env.WORKSPACE}\\$JOB_NAME\\BuildConfiguration.json"
+    def buildConfiguration = configuration.readJson("${env.WORKSPACE}\\$JOB_NAME\\BuildConfiguration.json");
     
     timestamps {
         stage('Checkout') {
             cleanDir(buildArtifactsDir)
-
-            dir('jenkins-build-tool') {
-                git url: 'https://github.com/khdevnet/jenkins-build-tool.git'
-            }
-            
-            def configuration = load 'jenkins-build-tool\\JsonConfiguration.groovy'
-            println "${env.WORKSPACE}\\${env.BuildConfigurationPath}"
-            def buildConfiguration = configuration.readJson("${env.WORKSPACE}\\$JOB_NAME");
-            
-            for(def repo :buildConfiguration.repositories ) {
+            for(def repo : buildConfiguration.repositories ) {
               dir(repo.name) {
                   git url: repo.url
               }
-            }
-            
+            }          
         }
         def buildStatus = BuildStatus.Ok
         try {
 
             stage('Build') {
-                bat "\"${tool 'nuget'}\" restore $solutionName"
-                bat "\"${tool 'msbuild'}\" $solutionName  /p:DeployOnBuild=true;DeployTarget=Package /p:Configuration=Release;OutputPath=\"$buildArtifactsDir\" /p:Platform=\"Any CPU\" /p:ProductVersion=1.0.0.${env.BUILD_NUMBER}"
-            }
+                for(def repo : buildConfiguration.repositories ) {
+                    def solution = ${repo.name}\\${repo.solution}
+                    bat "\"${tool 'nuget'}\" restore $solution
+                    bat "\"${tool 'msbuild'}\" $solution  /p:DeployOnBuild=true;DeployTarget=Package /p:Configuration=Release;OutputPath=\"$buildArtifactsDir\" /p:Platform=\"Any CPU\" /p:ProductVersion=1.0.0.${env.BUILD_NUMBER}"
+                }
+             }
 
             stage('Tests') {
                 def testDllsName = getFiles(["$buildArtifacts/*.Tests.dll"], buildArtifactsDir).join(' ')
