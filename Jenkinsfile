@@ -34,13 +34,9 @@ node {
             }
 
             stage('CodeQuality') {
-              println configuration.codeQuality.fxcop.wildcards
               def assemblies = getFilePaths(configuration.codeQuality.fxcop.wildcards)
-              println assemblies
               dir(env.WORKSPACE){
                   for(def assembly : assemblies ) { 
-                     println assembly
-                     println "${configuration.codeQuality.fxcop.reports}\\${new File(assembly).name}.fxcop.xml"
                      try{
                       bat """"${tool 'fxcop'}" /f:$assembly /o:${configuration.codeQuality.fxcop.reports}\\${new File(assembly).name}.fxcop.xml"""
                      } catch(Exception ex) {
@@ -51,7 +47,11 @@ node {
             }
 
             stage('Archive') {
-                archiveArtifacts artifacts: 'buildartifacts/**/*.*', onlyIfSuccessful: true
+              dir(env.WORKSPACE){
+                 for(def archive : configuration.archive ) { 
+                   archiveArtifacts artifacts: archive, onlyIfSuccessful: true
+                 }
+              }
             }
             
         } catch (ex) {
