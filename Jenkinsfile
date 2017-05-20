@@ -18,13 +18,13 @@ node {
         }
         
         try {
-            //stage('Build') {
-                //for(def component : configuration.components ) {
-                    //def solution = "${component.name}\\${component.solution}"
-                    //bat "\"${tool 'nuget'}\" restore $solution"
-                    //bat "\"${tool 'msbuild'}\" $solution ${component.properties} /p:ProductVersion=1.0.0.${env.BUILD_NUMBER}"
-                //}
-            // }
+            stage('Build') {
+                for(def component : configuration.components ) {
+                    def solution = "${component.name}\\${component.solution}"
+                    bat "\"${tool 'nuget'}\" restore $solution"
+                    bat "\"${tool 'msbuild'}\" $solution ${component.properties} /p:ProductVersion=1.0.0.${env.BUILD_NUMBER}"
+                }
+            }
 
             stage('Tests') {
                 dir(env.WORKSPACE){
