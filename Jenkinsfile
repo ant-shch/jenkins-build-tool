@@ -34,6 +34,7 @@ node {
             }
 
             stage('CodeQuality') {
+              println configuration.codeQuality.fxcop.wildcards
               def assemblies = getFilePaths(configuration.codeQuality.fxcop.wildcards)
               println assemblies
               dir(env.WORKSPACE){
