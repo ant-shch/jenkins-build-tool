@@ -29,23 +29,22 @@ node {
             stage('Tests') {
                 dir(env.WORKSPACE){
                     bat """${tool 'nunit'} ${getFilePaths(configuration.tests.wildcards).join(' ')} --work=${configuration.tests.reports}"""
+                    nunit testResultsPattern: "${configuration.tests.reports}/TestResult.xml"
                 }
-                
-               // def testDllsName = getFiles(configuration.tests).join(' ')
-               // bat """${tool 'nunit'} $testDllsName --work=$reportsDir"""
-               // nunit testResultsPattern: "$reports/TestResult.xml"
             }
 
             stage('CodeQuality') {
-              def codeQualityDllNames = getFiles(codeQualityDllWildCards, "${env.WORKSPACE}\\${configuration.artifacts}")
-              for(def fileName : codeQualityDllNames ) { 
-                 println fileName
-                 println "$reportsDir\\${new File(fileName).name}.fxcop.xml"
-                 try{
-                  bat """${tool 'fxcop'} /f:$fileName /o:$reportsDir\\${new File(fileName).name}.fxcop.xml"""
-                 } catch(Exception ex) {
-                    echo ex.getMessage()
-                 }
+              def assemblies = getFilePaths(configuration.codeQuality.fxcop.wildcards)
+              dir(env.WORKSPACE){
+                  for(def assembly : assemblies ) { 
+                     println assembly
+                     println "${configuration.codeQuality.fxcop.reports}\\${new File(assembly).name}.fxcop.xml"
+                     try{
+                      bat """${tool 'fxcop'} /f:$assembly /o:${configuration.codeQuality.fxcop.reports}\\${new File(assembly).name}.fxcop.xml"""
+                     } catch(Exception ex) {
+                        echo ex.getMessage()
+                     }
+                  }
               }
             }
 
