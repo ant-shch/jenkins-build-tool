@@ -42,7 +42,7 @@ node {
                      println assembly
                      println "${configuration.codeQuality.fxcop.reports}\\${new File(assembly).name}.fxcop.xml"
                      try{
-                      bat """${tool 'fxcop'} /f:$assembly /o:${configuration.codeQuality.fxcop.reports}\\${new File(assembly).name}.fxcop.xml"""
+                      bat """"${tool 'fxcop'}" /f:$assembly /o:${configuration.codeQuality.fxcop.reports}\\${new File(assembly).name}.fxcop.xml"""
                      } catch(Exception ex) {
                         echo ex.getMessage()
                      }
