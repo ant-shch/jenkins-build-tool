@@ -27,12 +27,8 @@ node {
             // }
 
             stage('Tests') {
-                println configuration.tests
-                def files = getFilePaths(configuration.tests) 
-                println files
-                echo files.join(' ')
                 dir(env.WORKSPACE){
-                    bat """${tool 'nunit'} ${files.join(' ')} --work=$reportsDir"""
+                    bat """${tool 'nunit'} ${getFilePaths(configuration.tests.wildcards).join(' ')} --work=${configuration.tests.reports}"""
                 }
                 
                // def testDllsName = getFiles(configuration.tests).join(' ')
