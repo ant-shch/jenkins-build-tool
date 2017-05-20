@@ -27,8 +27,10 @@ node {
              }
 
             stage('Tests') {
-                def files = findFiles(glob: configuration.tests[0]) echo """${files[0].name} ${files[0].path} ${files[0].directory} ${files[0].length} ${files[0].lastModified}"""
                 println configuration.tests
+                def files = findFiles(glob: configuration.tests[0]) 
+                echo """${files[0].name} ${files[0].path} ${files[0].directory} ${files[0].length} ${files[0].lastModified}"""
+                
                 def testDllsName = getFiles(configuration.tests, "${env.WORKSPACE}\\${configuration.artifacts}\\").join(' ')
                 bat """${tool 'nunit'} $testDllsName --work=$reportsDir"""
                 nunit testResultsPattern: "$reports/TestResult.xml"
