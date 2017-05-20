@@ -27,7 +27,8 @@ node {
              }
 
             stage('Tests') {
-                def testDllsName = getFiles(["${configuration.artifacts}/*.Tests.dll"], "${env.WORKSPACE}\\${configuration.artifacts}\\").join(' ')
+                println configuration.tests
+                def testDllsName = getFiles(configuration.tests, "${env.WORKSPACE}\\${configuration.artifacts}\\").join(' ')
                 bat """${tool 'nunit'} $testDllsName --work=$reportsDir"""
                 nunit testResultsPattern: "$reports/TestResult.xml"
             }
