@@ -12,7 +12,12 @@ Environment:
         Fill settings in folowing way
          Name: msbuild
          Path to Exe: C:\Program Files (x86)\MSBuild\14.0\Bin\MSBuild.exe
-  
+2. FxCopCmd Runner
+   - Install from url https://fxcopinstaller.codeplex.com/
+   - Update path to FxCopCmd runner in Jenkins using folowing path:
+     Manage Jenkins > Global tool configuration > Windows Exe Instalations
+         Name: fxcop
+         Path to Exe: C:\Program Files (x86)\Microsoft Fxcop 10.0\FxCopCmd.exe
 Jenkins Plugins 
   Pipeline Utility Steps
   NUnit plugin
