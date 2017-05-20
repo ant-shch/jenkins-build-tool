@@ -13,7 +13,7 @@ node {
     timestamps {
         stage('Checkout') {
            // cleanDir(env.WORKSPACE)
-          //  checkoutComponents(env.COMPONENTS)
+            checkoutComponents(env.COMPONENTS)
             configuration = getConfiguration('BuildConfiguration.json')
         }
         
