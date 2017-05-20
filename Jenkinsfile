@@ -12,28 +12,30 @@ node {
 
     timestamps {
         stage('Checkout') {
-            cleanDir(env.WORKSPACE)
-            checkoutComponents(env.COMPONENTS)
+           // cleanDir(env.WORKSPACE)
+          //  checkoutComponents(env.COMPONENTS)
             configuration = getConfiguration('BuildConfiguration.json')
         }
         
         try {
-            stage('Build') {
-                for(def component : configuration.components ) {
-                    def solution = "${component.name}\\${component.solution}"
-                    bat "\"${tool 'nuget'}\" restore $solution"
-                    bat "\"${tool 'msbuild'}\" $solution ${component.properties} /p:ProductVersion=1.0.0.${env.BUILD_NUMBER}"
-                }
-             }
+            //stage('Build') {
+                //for(def component : configuration.components ) {
+                    //def solution = "${component.name}\\${component.solution}"
+                    //bat "\"${tool 'nuget'}\" restore $solution"
+                    //bat "\"${tool 'msbuild'}\" $solution ${component.properties} /p:ProductVersion=1.0.0.${env.BUILD_NUMBER}"
+                //}
+            // }
 
             stage('Tests') {
                 println configuration.tests
-                def files = findFiles(glob: configuration.tests[0]) 
-                echo """${files[0].name} ${files[0].path} ${files[0].directory} ${files[0].length} ${files[0].lastModified}"""
+                def files = getFilePaths(glob: configuration.tests) 
+                dir(env.WORKSPACE){
+                    bat """${tool 'nunit'} ${files.join(' ')} --work=$reportsDir"""
+                }
                 
-                def testDllsName = getFiles(configuration.tests, "${env.WORKSPACE}\\${configuration.artifacts}\\").join(' ')
-                bat """${tool 'nunit'} $testDllsName --work=$reportsDir"""
-                nunit testResultsPattern: "$reports/TestResult.xml"
+               // def testDllsName = getFiles(configuration.tests).join(' ')
+               // bat """${tool 'nunit'} $testDllsName --work=$reportsDir"""
+               // nunit testResultsPattern: "$reports/TestResult.xml"
             }
 
             stage('CodeQuality') {
@@ -204,6 +206,17 @@ def findlastNode(list, nodeName){
            return element
        }
     }
+}
+
+def getFilePaths(wildcards){
+    def files = []
+    for(def wildcard : wildcards ) { 
+        files.addAll(findFiles(glob: wildcard))
+    }
+    
+    def filePaths = []
+    for(def file : files ) { filePaths << file.path }
+    return filePaths
 }
 
 def getFiles(wildcards, rootDir=''){
