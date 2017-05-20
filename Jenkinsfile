@@ -28,7 +28,7 @@ node {
 
             stage('Tests') {
                 println configuration.tests
-                def files = getFilePaths(glob: configuration.tests) 
+                def files = getFilePaths(configuration.tests) 
                 println files
                 echo files.join(' ')
                 dir(env.WORKSPACE){
