@@ -20,10 +20,13 @@ node {
                     bat "\"${tool 'msbuild'}\" $solution ${component.properties} /p:ProductVersion=1.0.0.${env.BUILD_NUMBER}"
                 }
             }
-             println "testsssss"
+            println "testsssss"
             println configuration.build.tests
+            
             if(configuration.build.tests) {
+                println "commi"
                 stage('Tests') {
+                    println "mii"
                     dir(env.WORKSPACE){
                         bat """${tool 'nunit'} ${getFilePaths(configuration.tests.wildcards).join(' ')} --work=${configuration.reports}"""
                         nunit testResultsPattern: "${configuration.reports}/TestResult.xml"
