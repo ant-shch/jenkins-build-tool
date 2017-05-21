@@ -21,17 +21,7 @@ node {
                 }
                 println "endbuild"
             }
-            
-            println "testsssss"
 
-                stage('Tests') {
-                     println "teststart"
-                    dir(env.WORKSPACE){
-                        bat """${tool 'nunit'} ${getFilePaths(configuration.tests.wildcards).join(' ')} --work=${configuration.reports}"""
-                        nunit testResultsPattern: "${configuration.reports.replace("\\","/")}/TestResult.xml"
-                    }
-                }
-            
             
             if(configuration.build.codeQuality) {
                 stage('CodeQuality') {
@@ -66,12 +56,6 @@ node {
             if(configuration.build.notifications) {
                 stage('Notifications') {
                   def subject = "Build $buildStatus - $JOB_NAME ($BUILD_DISPLAY_NAME)"
-
-                  def nunitTestBody = configuration.build.tests
-                    ? renderTemplete(
-                        configuration.reportsTemplates + 'nunitTestResult.template.html',
-                        getTestReportModel(configuration.reports + '\\TestResult.xml'))
-                    : ""
 
                   def fxCopTestBody = configuration.build.codeQuality
                     ? renderTemplete(
