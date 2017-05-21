@@ -63,7 +63,7 @@ node {
              
               def fxCopTestBody = renderTemplete(
                 configuration.reportsTemplates + 'fxCopTestResult.template.html', 
-                getFxCopReporModel(codeQuality.fxcop.reports))
+                getFxCopReporModel(configuration.codeQuality.fxcop.reports))
                 
               def emailBody = renderTemplete(
                 configuration.reportsTemplates + 'buildresult.template.html', 
