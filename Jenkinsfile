@@ -6,22 +6,29 @@ node {
 
     timestamps {
         stage('Checkout') {
-            //cleanDir(env.WORKSPACE)
+            cleanDir(env.WORKSPACE)
             checkoutComponents(env.COMPONENTS)
             configuration = getConfiguration('BuildConfiguration.json')
+            println configuration
         }
         
         try {
-             println "try"
             stage('Build') {
                 for(def component : configuration.components ) {
                     def solution = "${component.name}\\${component.solution}"
                     bat "\"${tool 'nuget'}\" restore $solution"
                     bat "\"${tool 'msbuild'}\" $solution ${component.properties} /p:ProductVersion=1.0.0.${env.BUILD_NUMBER}"
                 }
-                println "endbuild"
             }
-
+            
+            if(configuration.build.tests) {
+                stage('Tests') {
+                    dir(env.WORKSPACE){
+                        bat """${tool 'nunit'} ${getFilePaths(configuration.tests.wildcards).join(' ')} --work=${configuration.reports}"""
+                        nunit testResultsPattern: "${configuration.reports}/TestResult.xml"
+                    }
+                }
+            }
             
             if(configuration.build.codeQuality) {
                 stage('CodeQuality') {
@@ -57,11 +64,13 @@ node {
                 stage('Notifications') {
                   def subject = "Build $buildStatus - $JOB_NAME ($BUILD_DISPLAY_NAME)"
 
-                  def fxCopTestBody = configuration.build.codeQuality
-                    ? renderTemplete(
-                        configuration.reportsTemplates + 'fxCopTestResult.template.html',
-                        getFxCopReporModel(configuration.codeQuality.fxcop.reports))
-                    : ""
+                  def nunitTestBody = renderTemplete(
+                    configuration.reportsTemplates + 'nunitTestResult.template.html', 
+                    getTestReportModel(configuration.reports + '\\TestResult.xml'))
+
+                  def fxCopTestBody = renderTemplete(
+                    configuration.reportsTemplates + 'fxCopTestResult.template.html', 
+                    getFxCopReporModel(configuration.codeQuality.fxcop.reports))
 
                   def emailBody = renderTemplete(
                     configuration.reportsTemplates + 'buildresult.template.html', 
