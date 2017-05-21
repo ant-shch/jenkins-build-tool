@@ -3,7 +3,13 @@
 Configuration guide
 Jenkins:
 
-1. Install Windows Exe Runner Plugin https://wiki.jenkins-ci.org/display/JENKINS/Windows+Exe+Runner+Plugin
+1. Install plugins
+   - Windows Exe Runner Plugin https://wiki.jenkins-ci.org/display/JENKINS/Windows+Exe+Runner+Plugin
+   - Email-ext Plugin https://wiki.jenkins-ci.org/display/JENKINS/Email-ext+plugin
+   - EnvInject Plugin https://wiki.jenkins-ci.org/display/JENKINS/EnvInject+Plugin
+   - NUnit plugin https://wiki.jenkins-ci.org/display/JENKINS/NUnit+Plugin
+   - Pipeline https://wiki.jenkins-ci.org/display/JENKINS/Pipeline+Plugin
+   - Pipeline Utility Steps https://wiki.jenkins-ci.org/display/JENKINS/Pipeline+Utility+Steps+Plugin
 
 2. Environment:
     MsBuild 
@@ -31,10 +37,4 @@ Jenkins:
      - Update path to NuGet runner in Jenkins using folowing path:
        Manage Jenkins > Global tool configuration > Windows Exe Instalations
            Name: nuget
-           Path to Exe: ${WORKSPACE}\jenkins-build-tool\buildtools\.nuget\NuGet.exe
-         
-Jenkins Plugins 
-  Pipeline Utility Steps
-  NUnit plugin
-  
-
+           Path to Exe: ${WORKSPACE}\jenkins-build-tool\buildtools\.nuget\NuGet.exe  
