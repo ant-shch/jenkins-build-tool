@@ -92,8 +92,7 @@ def checkoutComponents(components){
 
 def getConfiguration(configurationFileName) {
     def buildConfigurationJsonFile = findFiles(glob: "**/**/$configurationFileName").first()
-    def configurationsJson = readJSON file: "${buildConfigurationJsonFile.path}"
-    return configurationsJson
+    readJsonFromFile(buildConfigurationJsonFile.path)
 }
 
 def getComponentFolder(giturl) {
@@ -105,7 +104,7 @@ def readJsonFromText(def text) {
 }
 
 def readJsonFromFile(def path) { 
-    def configurationFile = new File(path)
+    def configurationFile = new File(env.WORKSPACE, path)
     return new JsonSlurperClassic().parseText(configurationFile.text) 
 }
 
