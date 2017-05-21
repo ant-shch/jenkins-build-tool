@@ -24,7 +24,7 @@ node {
             println "testsssss"
             println configuration.build.tests
             
-            if(configuration.build.tests) {
+           
                 println "commi"
                 stage('Tests') {
                     println "mii"
@@ -33,7 +33,7 @@ node {
                         nunit testResultsPattern: "${configuration.reports}/TestResult.xml"
                     }
                 }
-            }
+            
             
             if(configuration.build.codeQuality) {
                 stage('CodeQuality') {
