@@ -20,7 +20,8 @@ node {
                     bat "\"${tool 'msbuild'}\" $solution ${component.properties} /p:ProductVersion=1.0.0.${env.BUILD_NUMBER}"
                 }
             }
-            
+             println "testsssss"
+            println configuration.build.tests
             if(configuration.build.tests) {
                 stage('Tests') {
                     dir(env.WORKSPACE){
@@ -64,13 +65,17 @@ node {
                 stage('Notifications') {
                   def subject = "Build $buildStatus - $JOB_NAME ($BUILD_DISPLAY_NAME)"
 
-                  def nunitTestBody = renderTemplete(
-                    configuration.reportsTemplates + 'nunitTestResult.template.html', 
-                    getTestReportModel(configuration.reports + '\\TestResult.xml'))
+                  def nunitTestBody = configuration.build.tests
+                    ? renderTemplete(
+                        configuration.reportsTemplates + 'nunitTestResult.template.html',
+                        getTestReportModel(configuration.reports + '\\TestResult.xml'))
+                    : ""
 
-                  def fxCopTestBody = renderTemplete(
-                    configuration.reportsTemplates + 'fxCopTestResult.template.html', 
-                    getFxCopReporModel(configuration.codeQuality.fxcop.reports))
+                  def fxCopTestBody = configuration.build.codeQuality
+                    ? renderTemplete(
+                        configuration.reportsTemplates + 'fxCopTestResult.template.html',
+                        getFxCopReporModel(configuration.codeQuality.fxcop.reports))'
+                    : ""
 
                   def emailBody = renderTemplete(
                     configuration.reportsTemplates + 'buildresult.template.html', 
