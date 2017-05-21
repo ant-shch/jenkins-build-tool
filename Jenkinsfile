@@ -92,7 +92,8 @@ def checkoutComponents(components){
 
 def getConfiguration(configurationFileName) {
     def buildConfigurationJsonFile = findFiles(glob: "**/**/$configurationFileName").first()
-    return readJSON file: "${buildConfigurationJsonFile.path}"
+    def configurationsJson = readJSON file: "${buildConfigurationJsonFile.path}"
+    return configurationsJson
 }
 
 def getComponentFolder(giturl) {
