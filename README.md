@@ -38,3 +38,10 @@ Jenkins:
        Manage Jenkins > Global tool configuration > Windows Exe Instalations
            Name: nuget
            Path to Exe: ${WORKSPACE}\jenkins-build-tool\buildtools\.nuget\NuGet.exe  
+ 3. Configure Job:
+    - Job > Configure > Prepare an environment for the run
+    - Add path to components COMPONENTS = ["https://github.com/yourcomponentpath.git", "https\://github.com/khdevnet/jenkins-build-tool.git" ]
+    
+ 4. BuildConfiguration.json 
+    - Add BuildConfiguration.json  to the root folder of your component
+    - Example you can find in "https\://github.com/khdevnet/jenkins-build-tool.git"
