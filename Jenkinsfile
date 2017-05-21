@@ -9,7 +9,6 @@ node {
             cleanDir(env.WORKSPACE)
             checkoutComponents(env.COMPONENTS)
             configuration = getConfiguration('BuildConfiguration.json')
-            println configuration
         }
         
         try {
@@ -93,7 +92,7 @@ def checkoutComponents(components){
 
 def getConfiguration(configurationFileName) {
     def buildConfigurationJsonFile = findFiles(glob: "**/**/$configurationFileName").first()
-    readJSON file: buildConfigurationJsonFile.path
+    readJsonFromFile("${env.WORKSPACE}//${buildConfigurationJsonFile.path}")
 }
 
 def getComponentFolder(giturl) {
