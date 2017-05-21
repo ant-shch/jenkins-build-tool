@@ -1,12 +1,6 @@
 #!groovy
 import groovy.json.JsonSlurperClassic
 node {
-    def buildArtifacts = "\\buildartifacts"
-    def buildArtifactsDir = "${env.WORKSPACE}\\$buildArtifacts"
-    def reports = "buildartifacts/reports"
-    def reportsDir = "$buildArtifactsDir\\reports"
-    def buildResultTemplateDir =  "${env.WORKSPACE}\\jenkins-build-tool\\buildtools\\report\\"
-    def codeQualityDllWildCards = ["$buildArtifacts/*.Api.dll","$buildArtifacts/*.Domain.dll"];
     def configuration
     def buildStatus = BuildStatus.Ok
 
@@ -28,8 +22,8 @@ node {
 
             stage('Tests') {
                 dir(env.WORKSPACE){
-                    bat """${tool 'nunit'} ${getFilePaths(configuration.tests.wildcards).join(' ')} --work=${configuration.tests.reports}"""
-                    nunit testResultsPattern: "${configuration.tests.reports}/TestResult.xml"
+                    bat """${tool 'nunit'} ${getFilePaths(configuration.tests.wildcards).join(' ')} --work=${configuration.reports}"""
+                    nunit testResultsPattern: "${configuration.reports}/TestResult.xml"
                 }
             }
 
@@ -38,7 +32,7 @@ node {
               dir(env.WORKSPACE){
                   for(def assembly : assemblies ) { 
                      try{
-                      bat """"${tool 'fxcop'}" /f:$assembly /o:${configuration.codeQuality.fxcop.reports}\\${new File(assembly).name}.fxcop.xml"""
+                      bat """"${tool 'fxcop'}" /f:$assembly /o:${configuration.reports}\\${new File(assembly).name}.fxcop.xml"""
                      } catch(Exception ex) {
                         echo ex.getMessage()
                      }
@@ -62,25 +56,23 @@ node {
             echo '===FINALY==='
             stage('Notifications') {
               def subject = "Build $buildStatus - $JOB_NAME ($BUILD_DISPLAY_NAME)"
-              def emailBody = getEmailBody(buildResultTemplateDir, reportsDir, reports, buildStatus) 
+                
+              def nunitTestBody = renderTemplete(
+                configuration.reportsTemplates + 'nunitTestResult.template.html', 
+                getTestReportModel(configuration.reports + '\\TestResult.xml'))
+             
+              def fxCopTestBody = renderTemplete(
+                configuration.reportsTemplates + 'fxCopTestResult.template.html', 
+                getFxCopReporModel(codeQuality.fxcop.reports))
+                
+              def emailBody = renderTemplete(
+                configuration.reportsTemplates + 'buildresult.template.html', 
+                getBuildCompleteModel(nunitTestBody, fxCopTestBody, buildStatus))  
+                
               emailext body: emailBody, subject: subject, to: 'khdevnet@gmail.com'
             }
        }
     }
-}
-
-def getEmailBody(buildResultTemplateDir, reportsDir, reports, buildStatus) {
-    def nunitTestBody = renderTemplete(
-        buildResultTemplateDir + 'nunitTestResult.template.html', 
-        getTestReportModel(reportsDir + '\\TestResult.xml'))
-             
-    def fxCopTestBody = renderTemplete(
-        buildResultTemplateDir + 'fxCopTestResult.template.html', 
-        getFxCopReporModel(["$reports/*.fxcop.xml"], reportsDir))
-                
-    def emailBody = renderTemplete(
-        buildResultTemplateDir + 'buildresult.template.html', 
-        getBuildCompleteModel(nunitTestBody, fxCopTestBody, buildStatus))  
 }
 
 def checkoutComponents(components){
@@ -110,16 +102,17 @@ def readJsonFromFile(def path) {
 }
 
 // parse fx cop
-def getFxCopReporModel(fxCopReportFileWildCards, filePrefix){
+def getFxCopReporModel(fxCopReportFileWildCards){
     def reportMap = [:]
-    for(def fxCopReportFilePath : getFiles(fxCopReportFileWildCards, filePrefix) ) {
-        def dllName = new File(fxCopReportFilePath).name.replace(".fxcop.xml", "");
-        def statistic = parseFxCopReportXmlFile("${fxCopReportFilePath}")
-        echo dllName
-        echo statistic
-        reportMap.put(dllName, statistic)
+    dir(env.WORKSPACE){
+        for(def fxCopReportFilePath : getFilePaths(fxCopReportFileWildCards) ) {
+            def dllName = new File(fxCopReportFilePath).name.replace(".fxcop.xml", "");
+            def statistic = parseFxCopReportXmlFile("${fxCopReportFilePath}")
+            echo dllName
+            echo statistic
+            reportMap.put(dllName, statistic)
+        }
     }
-    
     def statisticHtml = '';
     for(def model : reportMap ) {
          statisticHtml+="<li>${model.key}: ${model.value}</li>"
@@ -186,17 +179,21 @@ def mergeMap(target, map){
 }
 
 def renderTemplete(templateFilePath, model){
-    def templateBody =  new File(templateFilePath).text
-    def engine = new groovy.text.SimpleTemplateEngine()
-    engine.createTemplate(templateBody).make(model).toString()
+    dir(env.WORKSPACE){
+        def templateBody =  new File(templateFilePath).text
+        def engine = new groovy.text.SimpleTemplateEngine()
+        engine.createTemplate(templateBody).make(model).toString()
+    }
 }
 
 def getTestReportModel(nunitTestReportXmlFilePath){
-    def testXmlRootNode = new XmlParser().parse(new File(nunitTestReportXmlFilePath))
-    def resultNode = findlastNode(testXmlRootNode.children(),'test-suite')
-    def result = resultNode.attributes();
-    result.put('testResultsUrl', env.JOB_URL + env.BUILD_ID + '/testReport')
-    return result
+    dir(env.WORKSPACE) {
+        def testXmlRootNode = new XmlParser().parse(new File(nunitTestReportXmlFilePath))
+        def resultNode = findlastNode(testXmlRootNode.children(),'test-suite')
+        def result = resultNode.attributes();
+        result.put('testResultsUrl', env.JOB_URL + env.BUILD_ID + '/testReport')
+        return result
+    }
 }
 
 def findlastNode(list, nodeName){
