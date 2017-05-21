@@ -6,9 +6,12 @@ node {
 
     timestamps {
         stage('Checkout') {
-           // cleanDir(env.WORKSPACE)
-            checkoutComponents(env.COMPONENTS)
             configuration = getConfiguration('BuildConfiguration.json')
+            if(configuration.build.clearWorkspace) {
+                cleanDir(env.WORKSPACE)
+            }
+            checkoutComponents(env.COMPONENTS)
+
         }
         
         try {
@@ -19,33 +22,39 @@ node {
                     bat "\"${tool 'msbuild'}\" $solution ${component.properties} /p:ProductVersion=1.0.0.${env.BUILD_NUMBER}"
                 }
             }
-
-            stage('Tests') {
-                dir(env.WORKSPACE){
-                    bat """${tool 'nunit'} ${getFilePaths(configuration.tests.wildcards).join(' ')} --work=${configuration.reports}"""
-                    nunit testResultsPattern: "${configuration.reports}/TestResult.xml"
+            
+            if(configuration.build.tests) {
+                stage('Tests') {
+                    dir(env.WORKSPACE){
+                        bat """${tool 'nunit'} ${getFilePaths(configuration.tests.wildcards).join(' ')} --work=${configuration.reports}"""
+                        nunit testResultsPattern: "${configuration.reports}/TestResult.xml"
+                    }
                 }
             }
-
-            stage('CodeQuality') {
-              def assemblies = getFilePaths(configuration.codeQuality.fxcop.wildcards)
-              dir(env.WORKSPACE){
-                  for(def assembly : assemblies ) { 
-                     try{
-                      bat """"${tool 'fxcop'}" /f:$assembly /o:${configuration.reports}\\${new File(assembly).name}.fxcop.xml"""
-                     } catch(Exception ex) {
-                        echo ex.getMessage()
+            
+            if(configuration.build.codeQuality) {
+                stage('CodeQuality') {
+                  def assemblies = getFilePaths(configuration.codeQuality.fxcop.wildcards)
+                  dir(env.WORKSPACE){
+                      for(def assembly : assemblies ) { 
+                         try{
+                          bat """"${tool 'fxcop'}" /f:$assembly /o:${configuration.reports}\\${new File(assembly).name}.fxcop.xml"""
+                         } catch(Exception ex) {
+                            echo ex.getMessage()
+                         }
+                      }
+                  }
+                }
+            }
+            
+            if(configuration.build.archive) {
+                stage('Archive') {
+                  dir(env.WORKSPACE){
+                     for(def archive : configuration.archive ) { 
+                       archiveArtifacts artifacts: archive, onlyIfSuccessful: true
                      }
                   }
-              }
-            }
-
-            stage('Archive') {
-              dir(env.WORKSPACE){
-                 for(def archive : configuration.archive ) { 
-                   archiveArtifacts artifacts: archive, onlyIfSuccessful: true
-                 }
-              }
+                }
             }
             
         } catch (ex) {
@@ -53,23 +62,24 @@ node {
             echo ex
             exit 1
         } finally {
-            echo '===FINALY==='
-            stage('Notifications') {
-              def subject = "Build $buildStatus - $JOB_NAME ($BUILD_DISPLAY_NAME)"
-                
-              def nunitTestBody = renderTemplete(
-                configuration.reportsTemplates + 'nunitTestResult.template.html', 
-                getTestReportModel(configuration.reports + '\\TestResult.xml'))
-             
-              def fxCopTestBody = renderTemplete(
-                configuration.reportsTemplates + 'fxCopTestResult.template.html', 
-                getFxCopReporModel(configuration.codeQuality.fxcop.reports))
-                
-              def emailBody = renderTemplete(
-                configuration.reportsTemplates + 'buildresult.template.html', 
-                getBuildCompleteModel(nunitTestBody, fxCopTestBody, buildStatus))  
-                
-              emailext body: emailBody, subject: subject, to: 'khdevnet@gmail.com'
+            if(configuration.build.notifications) {
+                stage('Notifications') {
+                  def subject = "Build $buildStatus - $JOB_NAME ($BUILD_DISPLAY_NAME)"
+
+                  def nunitTestBody = renderTemplete(
+                    configuration.reportsTemplates + 'nunitTestResult.template.html', 
+                    getTestReportModel(configuration.reports + '\\TestResult.xml'))
+
+                  def fxCopTestBody = renderTemplete(
+                    configuration.reportsTemplates + 'fxCopTestResult.template.html', 
+                    getFxCopReporModel(configuration.codeQuality.fxcop.reports))
+
+                  def emailBody = renderTemplete(
+                    configuration.reportsTemplates + 'buildresult.template.html', 
+                    getBuildCompleteModel(nunitTestBody, fxCopTestBody, buildStatus))  
+
+                  emailext body: emailBody, subject: subject, to: 'khdevnet@gmail.com'
+                }
             }
        }
     }
