@@ -179,21 +179,17 @@ def mergeMap(target, map){
 }
 
 def renderTemplete(templateFilePath, model){
-    dir(env.WORKSPACE){
-        def templateBody =  new File(templateFilePath).text
-        def engine = new groovy.text.SimpleTemplateEngine()
-        engine.createTemplate(templateBody).make(model).toString()
-    }
+    def templateBody =  new File(env.WORKSPACE, templateFilePath).text
+    def engine = new groovy.text.SimpleTemplateEngine()
+    engine.createTemplate(templateBody).make(model).toString()
 }
 
 def getTestReportModel(nunitTestReportXmlFilePath){
-    dir(env.WORKSPACE) {
-        def testXmlRootNode = new XmlParser().parse(new File(nunitTestReportXmlFilePath))
-        def resultNode = findlastNode(testXmlRootNode.children(),'test-suite')
-        def result = resultNode.attributes();
-        result.put('testResultsUrl', env.JOB_URL + env.BUILD_ID + '/testReport')
-        return result
-    }
+    def testXmlRootNode = new XmlParser().parse(new File(env.WORKSPACE, nunitTestReportXmlFilePath))
+    def resultNode = findlastNode(testXmlRootNode.children(),'test-suite')
+    def result = resultNode.attributes();
+    result.put('testResultsUrl', env.JOB_URL + env.BUILD_ID + '/testReport')
+    return result
 }
 
 def findlastNode(list, nodeName){
