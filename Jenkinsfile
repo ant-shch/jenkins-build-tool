@@ -74,7 +74,7 @@ node {
                   def fxCopTestBody = configuration.build.codeQuality
                     ? renderTemplete(
                         configuration.reportsTemplates + 'fxCopTestResult.template.html',
-                        getFxCopReporModel(configuration.codeQuality.fxcop.reports))'
+                        getFxCopReporModel(configuration.codeQuality.fxcop.reports))
                     : ""
 
                   def emailBody = renderTemplete(
