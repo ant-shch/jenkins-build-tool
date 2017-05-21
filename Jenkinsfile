@@ -1,12 +1,6 @@
 #!groovy
 import groovy.json.JsonSlurperClassic
 node {
-    def buildArtifacts = "\\buildartifacts"
-    def buildArtifactsDir = "${env.WORKSPACE}\\$buildArtifacts"
-    def reports = "buildartifacts/reports"
-    def reportsDir = "$buildArtifactsDir\\reports"
-    def buildResultTemplateDir =  "${env.WORKSPACE}\\jenkins-build-tool\\buildtools\\report\\"
-    def codeQualityDllWildCards = ["$buildArtifacts/*.Api.dll","$buildArtifacts/*.Domain.dll"];
     def configuration
     def buildStatus = BuildStatus.Ok
 
@@ -22,31 +16,42 @@ node {
                 for(def component : configuration.components ) {
                     def solution = "${component.name}\\${component.solution}"
                     bat "\"${tool 'nuget'}\" restore $solution"
-                    bat "\"${tool 'msbuild'}\" $solution /p:DeployOnBuild=true;DeployTarget=Package /p:Configuration=Release;OutputPath=\"${env.WORKSPACE}\\${configuration.artifacts}\" /p:Platform=\"Any CPU\" /p:ProductVersion=1.0.0.${env.BUILD_NUMBER}"
+                    bat "\"${tool 'msbuild'}\" $solution ${component.properties} /p:ProductVersion=1.0.0.${env.BUILD_NUMBER}"
                 }
-             }
-
-            stage('Tests') {
-                def testDllsName = getFiles(["${configuration.artifacts}/*.Tests.dll"], "${env.WORKSPACE}\\${configuration.artifacts}\\").join(' ')
-                bat """${tool 'nunit'} $testDllsName --work=$reportsDir"""
-                nunit testResultsPattern: "$reports/TestResult.xml"
             }
-
-            stage('CodeQuality') {
-              def codeQualityDllNames = getFiles(codeQualityDllWildCards, "${env.WORKSPACE}\\${configuration.artifacts}")
-              for(def fileName : codeQualityDllNames ) { 
-                 println fileName
-                 println "$reportsDir\\${new File(fileName).name}.fxcop.xml"
-                 try{
-                  bat """${tool 'fxcop'} /f:$fileName /o:$reportsDir\\${new File(fileName).name}.fxcop.xml"""
-                 } catch(Exception ex) {
-                    echo ex.getMessage()
-                 }
-              }
+            
+            if(configuration.build.tests) {
+                stage('Tests') {
+                    dir(env.WORKSPACE){
+                        bat """${tool 'nunit'} ${getFilePaths(configuration.tests.wildcards).join(' ')} --work=${configuration.reports}"""
+                        nunit testResultsPattern: "${configuration.reports}/TestResult.xml"
+                    }
+                }
             }
-
-            stage('Archive') {
-                archiveArtifacts artifacts: 'buildartifacts/**/*.*', onlyIfSuccessful: true
+            
+            if(configuration.build.codeQuality) {
+                stage('CodeQuality') {
+                  def assemblies = getFilePaths(configuration.codeQuality.fxcop.wildcards)
+                  dir(env.WORKSPACE){
+                      for(def assembly : assemblies ) { 
+                         try{
+                          bat """"${tool 'fxcop'}" /f:$assembly /o:${configuration.reports}\\${new File(assembly).name}.fxcop.xml"""
+                         } catch(Exception ex) {
+                            echo ex.getMessage()
+                         }
+                      }
+                  }
+                }
+            }
+            
+            if(configuration.build.archive) {
+                stage('Archive') {
+                  dir(env.WORKSPACE){
+                     for(def archive : configuration.archive ) { 
+                       archiveArtifacts artifacts: archive, onlyIfSuccessful: true
+                     }
+                  }
+                }
             }
             
         } catch (ex) {
@@ -54,28 +59,31 @@ node {
             echo ex
             exit 1
         } finally {
-            echo '===FINALY==='
-            stage('Notifications') {
-              def subject = "Build $buildStatus - $JOB_NAME ($BUILD_DISPLAY_NAME)"
-              def emailBody = getEmailBody(buildResultTemplateDir, reportsDir, reports, buildStatus) 
-              emailext body: emailBody, subject: subject, to: 'khdevnet@gmail.com'
+            if(configuration.build.notifications) {
+                stage('Notifications') {
+                  def subject = "Build $buildStatus - $JOB_NAME ($BUILD_DISPLAY_NAME)"
+
+                  def nunitTestBody = configuration.build.tests
+                    ? renderTemplete(
+                        configuration.reportsTemplates + 'nunitTestResult.template.html',
+                        getTestReportModel(configuration.reports + '\\TestResult.xml'))
+                    : ""
+
+                  def fxCopTestBody = configuration.build.codeQuality
+                    ? renderTemplete(
+                        configuration.reportsTemplates + 'fxCopTestResult.template.html',                 
+                        getFxCopReporModel(configuration.codeQuality.fxcop.reports))
+                    : ""
+
+                  def emailBody = renderTemplete(
+                    configuration.reportsTemplates + 'buildresult.template.html', 
+                    getBuildCompleteModel(nunitTestBody, fxCopTestBody, buildStatus))  
+
+                  emailext body: emailBody, subject: subject, to: 'khdevnet@gmail.com'
+                }
             }
        }
     }
-}
-
-def getEmailBody(buildResultTemplateDir, reportsDir, reports, buildStatus) {
-    def nunitTestBody = renderTemplete(
-        buildResultTemplateDir + 'nunitTestResult.template.html', 
-        getTestReportModel(reportsDir + '\\TestResult.xml'))
-             
-    def fxCopTestBody = renderTemplete(
-        buildResultTemplateDir + 'fxCopTestResult.template.html', 
-        getFxCopReporModel(["$reports/*.fxcop.xml"], reportsDir))
-                
-    def emailBody = renderTemplete(
-        buildResultTemplateDir + 'buildresult.template.html', 
-        getBuildCompleteModel(nunitTestBody, fxCopTestBody, buildStatus))  
 }
 
 def checkoutComponents(components){
@@ -88,7 +96,7 @@ def checkoutComponents(components){
 
 def getConfiguration(configurationFileName) {
     def buildConfigurationJsonFile = findFiles(glob: "**/**/$configurationFileName").first()
-    readJsonFromFile("${env.WORKSPACE}//${buildConfigurationJsonFile.path}")
+    readJsonFromFile(buildConfigurationJsonFile.path)
 }
 
 def getComponentFolder(giturl) {
@@ -100,21 +108,22 @@ def readJsonFromText(def text) {
 }
 
 def readJsonFromFile(def path) { 
-    def configurationFile = new File(path)
+    def configurationFile = new File(env.WORKSPACE, path)
     return new JsonSlurperClassic().parseText(configurationFile.text) 
 }
 
 // parse fx cop
-def getFxCopReporModel(fxCopReportFileWildCards, filePrefix){
+def getFxCopReporModel(fxCopReportFileWildCards){
     def reportMap = [:]
-    for(def fxCopReportFilePath : getFiles(fxCopReportFileWildCards, filePrefix) ) {
-        def dllName = new File(fxCopReportFilePath).name.replace(".fxcop.xml", "");
-        def statistic = parseFxCopReportXmlFile("${fxCopReportFilePath}")
+    for(def fxCopReportFilePath : getFilePaths(fxCopReportFileWildCards) ) {
+        def fxCopReportFile = new File(env.WORKSPACE, fxCopReportFilePath)
+        def dllName = fxCopReportFile.name.replace(".fxcop.xml", "");
+        def statistic = parseFxCopReportXmlFile(fxCopReportFile)
         echo dllName
         echo statistic
         reportMap.put(dllName, statistic)
     }
-    
+
     def statisticHtml = '';
     for(def model : reportMap ) {
          statisticHtml+="<li>${model.key}: ${model.value}</li>"
@@ -123,10 +132,10 @@ def getFxCopReporModel(fxCopReportFileWildCards, filePrefix){
     return ["statistic": statisticHtml]
 }
 
-def parseFxCopReportXmlFile(fxCopReportFilePath){
+def parseFxCopReportXmlFile(fxCopReportFile){
    def errorsCount = 0
    def warningsCount = 0
-   def fxCopRootNode = new XmlParser().parse(new File(fxCopReportFilePath))
+   def fxCopRootNode = new XmlParser().parse(fxCopReportFile)
    def namespacesNode = getFirstNodeByName(fxCopRootNode.children(), 'Namespaces')
    def namespaceNodes = getAllNodesByName(namespacesNode.children(), 'Namespace');
    
@@ -181,13 +190,13 @@ def mergeMap(target, map){
 }
 
 def renderTemplete(templateFilePath, model){
-    def templateBody =  new File(templateFilePath).text
+    def templateBody =  new File(env.WORKSPACE, templateFilePath).text
     def engine = new groovy.text.SimpleTemplateEngine()
     engine.createTemplate(templateBody).make(model).toString()
 }
 
 def getTestReportModel(nunitTestReportXmlFilePath){
-    def testXmlRootNode = new XmlParser().parse(new File(nunitTestReportXmlFilePath))
+    def testXmlRootNode = new XmlParser().parse(new File(env.WORKSPACE, nunitTestReportXmlFilePath))
     def resultNode = findlastNode(testXmlRootNode.children(),'test-suite')
     def result = resultNode.attributes();
     result.put('testResultsUrl', env.JOB_URL + env.BUILD_ID + '/testReport')
@@ -200,6 +209,17 @@ def findlastNode(list, nodeName){
            return element
        }
     }
+}
+
+def getFilePaths(wildcards){
+    def files = []
+    for(def wildcard : wildcards ) { 
+        files.addAll(findFiles(glob: wildcard))
+    }
+    
+    def filePaths = []
+    for(def file : files ) { filePaths << file.path }
+    return filePaths
 }
 
 def getFiles(wildcards, rootDir=''){
