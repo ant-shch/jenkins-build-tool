@@ -9,8 +9,6 @@ node {
             //cleanDir(env.WORKSPACE)
             checkoutComponents(env.COMPONENTS)
             configuration = getConfiguration('BuildConfiguration.json')
-            println "sss"
-            println configuration.build.tests
         }
         
         try {
@@ -30,7 +28,7 @@ node {
                      println "teststart"
                     dir(env.WORKSPACE){
                         bat """${tool 'nunit'} ${getFilePaths(configuration.tests.wildcards).join(' ')} --work=${configuration.reports}"""
-                        nunit testResultsPattern: "${configuration.reports}/TestResult.xml"
+                        nunit testResultsPattern: "${configuration.reports.replace("\\","/")}/TestResult.xml"
                     }
                 }
             
