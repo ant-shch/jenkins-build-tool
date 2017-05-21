@@ -9,6 +9,7 @@ node {
             cleanDir(env.WORKSPACE)
             checkoutComponents(env.COMPONENTS)
             configuration = getConfiguration('BuildConfiguration.json')
+            println configuration
         }
         
         try {
