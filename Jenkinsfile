@@ -104,15 +104,14 @@ def readJsonFromFile(def path) {
 // parse fx cop
 def getFxCopReporModel(fxCopReportFileWildCards){
     def reportMap = [:]
-    dir(env.WORKSPACE){
-        for(def fxCopReportFilePath : getFilePaths(fxCopReportFileWildCards) ) {
-            def dllName = new File(fxCopReportFilePath).name.replace(".fxcop.xml", "");
-            def statistic = parseFxCopReportXmlFile("${fxCopReportFilePath}")
-            echo dllName
-            echo statistic
-            reportMap.put(dllName, statistic)
-        }
+    for(def fxCopReportFilePath : getFilePaths(fxCopReportFileWildCards) ) {
+        def dllName = new File(env.WORKSPACE, fxCopReportFilePath).name.replace(".fxcop.xml", "");
+        def statistic = parseFxCopReportXmlFile("${fxCopReportFilePath}")
+        echo dllName
+        echo statistic
+        reportMap.put(dllName, statistic)
     }
+
     def statisticHtml = '';
     for(def model : reportMap ) {
          statisticHtml+="<li>${model.key}: ${model.value}</li>"
