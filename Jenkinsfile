@@ -105,8 +105,9 @@ def readJsonFromFile(def path) {
 def getFxCopReporModel(fxCopReportFileWildCards){
     def reportMap = [:]
     for(def fxCopReportFilePath : getFilePaths(fxCopReportFileWildCards) ) {
-        def dllName = new File(env.WORKSPACE, fxCopReportFilePath).name.replace(".fxcop.xml", "");
-        def statistic = parseFxCopReportXmlFile("${fxCopReportFilePath}")
+        def fxCopReportFile = new File(env.WORKSPACE, fxCopReportFilePath)
+        def dllName = fxCopReportFile.name.replace(".fxcop.xml", "");
+        def statistic = parseFxCopReportXmlFile(fxCopReportFile)
         echo dllName
         echo statistic
         reportMap.put(dllName, statistic)
@@ -120,10 +121,10 @@ def getFxCopReporModel(fxCopReportFileWildCards){
     return ["statistic": statisticHtml]
 }
 
-def parseFxCopReportXmlFile(fxCopReportFilePath){
+def parseFxCopReportXmlFile(fxCopReportFile){
    def errorsCount = 0
    def warningsCount = 0
-   def fxCopRootNode = new XmlParser().parse(new File(fxCopReportFilePath))
+   def fxCopRootNode = new XmlParser().parse(fxCopReportFile)
    def namespacesNode = getFirstNodeByName(fxCopRootNode.children(), 'Namespaces')
    def namespaceNodes = getAllNodesByName(namespacesNode.children(), 'Namespace');
    
