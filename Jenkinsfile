@@ -14,20 +14,20 @@ node {
         }
         
         try {
+             println "try"
             stage('Build') {
                 for(def component : configuration.components ) {
                     def solution = "${component.name}\\${component.solution}"
                     bat "\"${tool 'nuget'}\" restore $solution"
                     bat "\"${tool 'msbuild'}\" $solution ${component.properties} /p:ProductVersion=1.0.0.${env.BUILD_NUMBER}"
                 }
+                println "endbuild"
             }
-            println "testsssss"
-            println configuration.build.tests
             
-           
-                println "commi"
+            println "testsssss"
+
                 stage('Tests') {
-                    println "mii"
+                     println "teststart"
                     dir(env.WORKSPACE){
                         bat """${tool 'nunit'} ${getFilePaths(configuration.tests.wildcards).join(' ')} --work=${configuration.reports}"""
                         nunit testResultsPattern: "${configuration.reports}/TestResult.xml"
