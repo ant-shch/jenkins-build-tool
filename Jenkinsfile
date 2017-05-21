@@ -6,13 +6,9 @@ node {
 
     timestamps {
         stage('Checkout') {
-            configuration = getConfiguration('BuildConfiguration.json')
-            println configuration
-            if(configuration.build.clearWorkspace) {
-                cleanDir(env.WORKSPACE)
-            }
+            cleanDir(env.WORKSPACE)
             checkoutComponents(env.COMPONENTS)
-
+            configuration = getConfiguration('BuildConfiguration.json')
         }
         
         try {
